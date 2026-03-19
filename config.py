@@ -11,9 +11,15 @@ Usage:
 
 # ============ Cấu hình Dữ liệu ============
 DATA_CONFIG = {
-    'url': 'https://example.com/dataset.csv',  # TODO: Thay bằng URL dataset thực tế
-    'file_path': 'data/raw_data.csv',
-    'target_column': 'target'  # TODO: Thay bằng tên cột target thực tế
+    # Nguồn chính cho hotel booking demand (hỗ trợ bởi modules.data_loader)
+    'url': 'jessemostipak/hotel-booking-demand',
+    # File local cache sau khi tải
+    'file_path': 'data/hotel_bookings.csv',
+    # Biến mục tiêu của bài toán hủy đặt phòng
+    'target_column': 'is_canceled',
+    # Cấu hình tải dữ liệu
+    'download_timeout': 60,
+    'force_download': False
 }
 
 # ============ Cấu hình EDA ============
