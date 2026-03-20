@@ -11,9 +11,9 @@ Usage:
 
 # ============ Cấu hình Dữ liệu ============
 DATA_CONFIG = {
-    'url': 'https://example.com/dataset.csv',  # TODO: Thay bằng URL dataset thực tế
-    'file_path': 'data/raw_data.csv',
-    'target_column': 'target'  # TODO: Thay bằng tên cột target thực tế
+    # 'url':  'https://example.com/dataset.csv',  # TODO: Thay bằng URL dataset thực tế
+    'file_path': 'data/hotel_bookings.csv',
+    'target_column': 'is_canceled'  # TODO: Thay bằng tên cột target thực tế
 }
 
 # ============ Cấu hình EDA ============
@@ -38,13 +38,13 @@ PREPROCESSING_CONFIG = {
         'strategy': 'mean',  # Cho SimpleImputer: 'mean', 'median', 'most_frequent'
         'n_neighbors': 5  # Cho KNNImputer
     },
-    
+
     # Encoding - Xử lý categorical features
     'encoding': {
         'method': 'OneHot',  # Options: 'OneHot', 'Label'
         'drop_first': False  # Cho OneHot encoding: drop first category để tránh multicollinearity
     },
-    
+
     # Scaling - Chuẩn hóa numeric features
     'scaling': {
         'method': 'StandardScaler',  # Options: 'StandardScaler', 'MinMaxScaler'
@@ -60,7 +60,8 @@ FEATURES_CONFIG = {
     },
     'output': {
         'format': 'npy',  # Options: 'npy', 'h5'
-        'path': 'features/processed_features'  # Đường dẫn base (không có extension)
+        # Đường dẫn base (không có extension)
+        'path': 'features/processed_features'
     }
 }
 
@@ -71,7 +72,7 @@ MODELS_CONFIG = {
         'test_size': 0.2,  # 20% cho test set
         'random_state': 42  # Seed cho reproducibility
     },
-    
+
     # Logistic Regression
     'logistic_regression': {
         'enabled': True,
@@ -81,7 +82,7 @@ MODELS_CONFIG = {
             'solver': 'lbfgs'
         }
     },
-    
+
     # Support Vector Machine
     'svm': {
         'enabled': True,
@@ -92,19 +93,20 @@ MODELS_CONFIG = {
             'random_state': 42
         }
     },
-    
+
     # Random Forest
     'random_forest': {
         'enabled': True,
         'params': {
             'n_estimators': 100,  # Số lượng trees
-            'max_depth': None,  # Độ sâu tối đa của tree (None = không giới hạn)
+            # Độ sâu tối đa của tree (None = không giới hạn)
+            'max_depth': None,
             'min_samples_split': 2,
             'min_samples_leaf': 1,
             'random_state': 42
         }
     },
-    
+
     # Multi-Layer Perceptron (Deep Learning - Bonus)
     'mlp': {
         'enabled': True,
@@ -149,10 +151,12 @@ CONFIG = {
 }
 
 # ============ Helper Functions ============
+
+
 def get_config():
     """
     Get toàn bộ configuration.
-    
+
     Returns:
         Dictionary chứa tất cả configurations
     """
