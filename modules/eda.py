@@ -38,7 +38,7 @@ def generate_eda_report(df: pd.DataFrame, output_dir: Optional[str] = None) -> D
     - Lưu báo cáo ra file nếu có output_dir
     """
     # TODO: Implement EDA report generation
-    print("[EDA] TODO: Tạo báo cáo thống kê mô tả")
+    print("[EDA] Tạo báo cáo thống kê mô tả")
 
     # 1. Phân loại numeric/categorical columns
     numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
@@ -48,12 +48,7 @@ def generate_eda_report(df: pd.DataFrame, output_dir: Optional[str] = None) -> D
     missing_values = df.isnull().sum()
     missing_dict = missing_values[missing_values > 0].to_dict()
 
-    # Ghi nhận riêng các cột cần chú ý (như bạn yêu cầu ở task trước)
-    cols_to_check = ['agent', 'company', 'children']
-    specific_missing = {
-        col: int(df[col].isnull().sum())
-        for col in cols_to_check if col in df.columns
-    }
+    specific_missing = {col: int(count) for col, count in missing_dict.items()}
 
     # 3. Tính unique values cho mỗi cột
     unique_values = df.nunique().to_dict()
@@ -149,7 +144,7 @@ def plot_missing_values(df: pd.DataFrame, output_path: str,
     - Lưu hình ảnh
     """
     # TODO: Implement missing values visualization
-    print(f"[EDA] TODO: Vẽ biểu đồ missing values và lưu vào {output_path}")
+    print(f"[EDA] Vẽ biểu đồ missing values và lưu vào {output_path}")
     print(f"[EDA] Đang vẽ biểu đồ missing values và lưu vào {output_path}...")
 
     # 1. Tính số lượng missing values cho mỗi cột

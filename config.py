@@ -34,8 +34,10 @@ EDA_CONFIG = {
 PREPROCESSING_CONFIG = {
     # Imputation - Xử lý missing values
     'imputation': {
+        'drop_columns': ['company'],
+        'constant_fill': {'agent': 0.0},
         'method': 'SimpleImputer',  # Options: 'SimpleImputer', 'KNNImputer'
-        'strategy': 'mean',  # Cho SimpleImputer: 'mean', 'median', 'most_frequent'
+        'strategy': 'median',  # Cho SimpleImputer: 'mean', 'median', 'most_frequent'
         'n_neighbors': 5  # Cho KNNImputer
     },
 

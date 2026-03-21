@@ -49,9 +49,10 @@
             "company": 112593
         },
         "target_columns_missing": {
+            "children": 4,
+            "country": 488,
             "agent": 16340,
-            "company": 112593,
-            "children": 4
+            "company": 112593
         }
     },
     "unique_values_count": {
