@@ -182,3 +182,6 @@ notebooks/experiments/
 notebooks/scratch/
 notebooks/*_test.ipynb
 notebooks/*_draft.ipynb
+
+*.png
+notebooks/reports/eda/*
