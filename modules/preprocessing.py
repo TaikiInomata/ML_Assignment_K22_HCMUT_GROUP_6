@@ -175,18 +175,57 @@ def apply_scaling(df: pd.DataFrame, config: Dict[str, Any]) -> Tuple[pd.DataFram
         Tuple chứa:
             - DataFrame đã được scale
             - Dictionary chứa metadata và fitted scaler
-
-    TODO: Implement logic scaling
-    - Đảm bảo tất cả columns là numeric
-    - Áp dụng scaling theo method được chọn
-    - Lưu fitted scaler để transform test data
-    - Log thông tin về scaling parameters
-    - Trả về DataFrame và metadata
     """
-    # TODO: Implement scaling logic
-    print(
-        f"[Preprocessing] TODO: Áp dụng scaling với method={config.get('method', 'StandardScaler')}")
-    pass
+    df_scaled = df.copy()
+    method = config.get('method', 'StandardScaler')
+
+    # Lọc chỉ các cột numeric để scale
+    numeric_cols = df_scaled.select_dtypes(include=[np.number]).columns.tolist()
+    non_numeric_cols = df_scaled.select_dtypes(exclude=[np.number]).columns.tolist()
+
+    if non_numeric_cols:
+        print(f"[Preprocessing] Cảnh báo: Tìm thấy {len(non_numeric_cols)} cột không phải numeric, sẽ bỏ qua: {non_numeric_cols}")
+
+    if not numeric_cols:
+        print("[Preprocessing] Không tìm thấy numeric columns để scaling.")
+        metadata = {
+            'method': method,
+            'numeric_columns': [],
+            'scaler': None,
+        }
+        return df_scaled, metadata
+
+    print(f"[Preprocessing] Áp dụng {method} cho {len(numeric_cols)} numeric features")
+
+    if method == 'StandardScaler':
+        scaler = StandardScaler()
+    elif method == 'MinMaxScaler':
+        feature_range = tuple(config.get('feature_range', (0, 1)))
+        scaler = MinMaxScaler(feature_range=feature_range)
+        print(f"  - feature_range = {feature_range}")
+    else:
+        raise ValueError(f"[Preprocessing] Scaling method '{method}' chưa được hỗ trợ. Chọn 'StandardScaler' hoặc 'MinMaxScaler'.")
+
+    df_scaled[numeric_cols] = scaler.fit_transform(df_scaled[numeric_cols])
+
+    # Log thông tin về scaling parameters
+    if method == 'StandardScaler':
+        print(f"  - Mean range: [{scaler.mean_.min():.4f}, {scaler.mean_.max():.4f}]")
+        print(f"  - Scale range: [{scaler.scale_.min():.4f}, {scaler.scale_.max():.4f}]")
+    elif method == 'MinMaxScaler':
+        print(f"  - Data min range: [{scaler.data_min_.min():.4f}, {scaler.data_min_.max():.4f}]")
+        print(f"  - Data max range: [{scaler.data_max_.min():.4f}, {scaler.data_max_.max():.4f}]")
+
+    print(f"[Preprocessing] Scaling hoàn tất cho {len(numeric_cols)} features")
+
+    metadata = {
+        'method': method,
+        'config': config,
+        'numeric_columns': numeric_cols,
+        'scaler': scaler,
+    }
+
+    return df_scaled, metadata
 
 
 def preprocess_pipeline(df: pd.DataFrame, target_column: str,
