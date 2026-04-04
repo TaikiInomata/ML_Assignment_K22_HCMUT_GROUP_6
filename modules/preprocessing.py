@@ -148,18 +148,84 @@ def apply_encoding(df: pd.DataFrame, config: Dict[str, Any]) -> Tuple[pd.DataFra
             - DataFrame đã được encode
             - Dictionary chứa metadata về encoding
 
-    TODO: Implement logic encoding
-    - Phát hiện categorical columns
-    - Áp dụng encoding theo method được chọn
-    - Log thông tin về số features trước và sau
-    - Lưu label mappings nếu dùng Label Encoding
-    - Trả về DataFrame và metadata
     """
-    # TODO: Implement encoding logic
-    print(
-        f"[Preprocessing] TODO: Áp dụng encoding với method={config.get('method', 'OneHot')}")
-    pass
-
+    # Phát hiện categorical columns (object hoặc category dtypes)
+    categorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
+    
+    if not categorical_cols:
+        print("[Preprocessing] Không có categorical columns để encode.")
+        return df.copy(), {
+            'method': config.get('method', 'OneHot'),
+            'categorical_columns': [],
+            'encoded_columns': [],
+            'encoder': None
+        }
+    
+    method = config.get('method', 'OneHot')
+    df_encoded = df.copy()
+    
+    print(f"[Preprocessing] Áp dụng {method} encoding cho {len(categorical_cols)} categorical columns: {categorical_cols}")
+    
+    if method == 'OneHot':
+        # Sử dụng OneHotEncoder
+        drop_first = config.get('drop_first', False)
+        drop_param = 'first' if drop_first else None
+        
+        encoder = OneHotEncoder(sparse_output=False, drop=drop_param, handle_unknown='ignore')
+        
+        # Fit và transform
+        encoded_array = encoder.fit_transform(df_encoded[categorical_cols])
+        
+        # Tạo tên cột mới
+        encoded_columns = []
+        for i, col in enumerate(categorical_cols):
+            categories = encoder.categories_[i]
+            if drop_first and len(categories) > 1:
+                categories = categories[1:]  # Bỏ category đầu nếu drop_first
+            for cat in categories:
+                encoded_columns.append(f"{col}_{cat}")
+        
+        # Tạo DataFrame với encoded features
+        encoded_df = pd.DataFrame(encoded_array, columns=encoded_columns, index=df_encoded.index)
+        
+        # Xóa các cột categorical gốc và thêm encoded
+        df_encoded = df_encoded.drop(columns=categorical_cols)
+        df_encoded = pd.concat([df_encoded, encoded_df], axis=1)
+        
+        print(f"[Preprocessing] OneHot encoding hoàn thành. Số features: {len(df.columns)} → {len(df_encoded.columns)}")
+        
+        metadata = {
+            'method': 'OneHot',
+            'categorical_columns': categorical_cols,
+            'encoded_columns': encoded_columns,
+            'drop_first': drop_first,
+            'encoder': encoder
+        }
+        
+    elif method == 'Label':
+        # Sử dụng LabelEncoder cho mỗi cột
+        encoders = {}
+        label_mappings = {}
+        
+        for col in categorical_cols:
+            le = LabelEncoder()
+        df_encoded[col] = le.fit_transform(df_encoded[col].astype(str))
+        encoders[col] = le
+        label_mappings[col] = dict(zip(le.classes_, le.transform(le.classes_)))
+        
+        print(f"[Preprocessing] Label encoding hoàn thành. Số features giữ nguyên: {len(df_encoded.columns)}")
+        
+        metadata = {
+            'method': 'Label',
+            'categorical_columns': categorical_cols,
+            'encoded_columns': categorical_cols,  # Giữ nguyên tên cột
+            'encoders': encoders,
+            'label_mappings': label_mappings
+        }
+    else:
+        raise ValueError(f"[Preprocessing] Method '{method}' không được hỗ trợ. Chọn 'OneHot' hoặc 'Label'.")
+    
+    return df_encoded, metadata
 
 def apply_scaling(df: pd.DataFrame, config: Dict[str, Any]) -> Tuple[pd.DataFrame, Dict[str, Any]]:
     """
