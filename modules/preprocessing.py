@@ -209,9 +209,9 @@ def apply_encoding(df: pd.DataFrame, config: Dict[str, Any]) -> Tuple[pd.DataFra
         
         for col in categorical_cols:
             le = LabelEncoder()
-        df_encoded[col] = le.fit_transform(df_encoded[col].astype(str))
-        encoders[col] = le
-        label_mappings[col] = dict(zip(le.classes_, le.transform(le.classes_)))
+            df_encoded[col] = le.fit_transform(df_encoded[col].astype(str))
+            encoders[col] = le
+            label_mappings[col] = dict(zip(le.classes_, le.transform(le.classes_)))
         
         print(f"[Preprocessing] Label encoding hoàn thành. Số features giữ nguyên: {len(df_encoded.columns)}")
         
