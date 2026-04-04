@@ -30,6 +30,8 @@ from urllib.parse import urlparse
 import pandas as pd
 import requests
 
+from config import get_data_config
+
 
 def _looks_like_kaggle_slug(value: str) -> bool:
     """Kiểm tra định dạng owner/dataset của Kaggle."""
@@ -331,6 +333,33 @@ def load_data_pipeline(url: str, output_path: str, **read_kwargs) -> Tuple[pd.Da
     return df, metadata
 
 
+def load_data_from_config(**read_kwargs) -> Tuple[pd.DataFrame, Dict[str, Any]]:
+    """
+    Pipeline tiện ích: đọc DATA_CONFIG từ config.py để tải và load dữ liệu.
+
+    Có thể override bằng read_kwargs:
+    - source/url: ghi đè nguồn dữ liệu
+    - output_path: ghi đè nơi lưu file
+    - download_timeout: ghi đè timeout download
+    - force_download: ghi đè hành vi cache
+    - Các tham số còn lại truyền vào pandas reader
+    """
+    data_config = get_data_config()
+
+    source = read_kwargs.pop("source", None) or read_kwargs.pop("url", None) or data_config["url"]
+    output_path = read_kwargs.pop("output_path", None) or data_config["file_path"]
+    timeout = read_kwargs.pop("download_timeout", data_config.get("download_timeout", 60))
+    force_download = read_kwargs.pop("force_download", data_config.get("force_download", False))
+
+    return load_data_pipeline(
+        url=source,
+        output_path=output_path,
+        download_timeout=timeout,
+        force_download=force_download,
+        **read_kwargs,
+    )
+
+
 def load_data_from_source(
     source: str,
     output_path: str,
@@ -347,9 +376,9 @@ def load_data_from_source(
 
 
 def load_hotel_bookings_dataset(
-    output_path: str = "data/hotel_bookings.csv",
-    url: str = "jessemostipak/hotel-booking-demand",
-    force_download: bool = False,
+    output_path: str | None = None,
+    url: str | None = None,
+    force_download: bool | None = None,
 ) -> Tuple[pd.DataFrame, Dict[str, Any]]:
     """
     Hàm tiện ích cho dataset Hotel Booking Demand.
@@ -362,10 +391,19 @@ def load_hotel_bookings_dataset(
     Returns:
         DataFrame và metadata
     """
+    data_config = get_data_config()
+    resolved_url = url or data_config["url"]
+    resolved_output_path = output_path or data_config["file_path"]
+    resolved_force_download = (
+        force_download if force_download is not None else data_config.get("force_download", False)
+    )
+    resolved_timeout = data_config.get("download_timeout", 60)
+
     return load_data_pipeline(
-        url=url,
-        output_path=output_path,
-        force_download=force_download,
+        url=resolved_url,
+        output_path=resolved_output_path,
+        download_timeout=resolved_timeout,
+        force_download=resolved_force_download,
     )
 
 
@@ -403,7 +441,7 @@ if __name__ == "__main__":
     #
     # Lưu ý với Kaggle URL: cần cấu hình Kaggle API token trước khi chạy.
     try:
-        df_, meta_ = load_hotel_bookings_dataset()
+        df_, meta_ = load_data_from_config()
         print("\n" + "=" * 72)
         print("DATA PREVIEW")
         print("=" * 72)
