@@ -115,16 +115,35 @@ def plot_correlation_heatmap(df: pd.DataFrame, output_path: str,
 
     Returns:
         Đường dẫn đến file hình ảnh đã lưu
-
-    TODO: Implement logic vẽ heatmap
-    - Chọn các cột numeric
-    - Tính correlation matrix
-    - Vẽ heatmap với seaborn
-    - Lưu hình ảnh với DPI cao
     """
-    # TODO: Implement correlation heatmap
-    print(f"[EDA] TODO: Vẽ correlation heatmap và lưu vào {output_path}")
-    pass
+    print(f"[EDA] Vẽ correlation heatmap...")
+    
+    # Chọn các cột numeric
+    numeric_df = df.select_dtypes(include=[np.number])
+    
+    if numeric_df.empty:
+        print("[EDA] Không có numeric columns để tính correlation.")
+        return ""
+    
+    # Tính correlation matrix
+    corr_matrix = numeric_df.corr()
+    
+    # Vẽ heatmap với seaborn
+    plt.figure(figsize=figsize)
+    sns.heatmap(corr_matrix, annot=True, fmt='.2f', cmap='coolwarm', 
+                center=0, cbar_kws={'label': 'Correlation'}, 
+                square=True, linewidths=0.5)
+    
+    plt.title('Correlation Matrix - Numeric Features', fontsize=16, pad=20)
+    plt.tight_layout()
+    
+    # Lưu hình ảnh
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    
+    print(f"[EDA] Lưu correlation heatmap tại: {output_path}")
+    return output_path
 
 
 def plot_missing_values(df: pd.DataFrame, output_path: str,
@@ -213,18 +232,57 @@ def plot_class_distribution(df: pd.DataFrame, target_column: str,
 
     Raises:
         ValueError: Nếu target column không tồn tại
-
-    TODO: Implement logic vẽ class distribution
-    - Kiểm tra target column tồn tại
-    - Tính số lượng và phần trăm mỗi class
-    - Vẽ bar chart và pie chart
-    - Cảnh báo nếu có class imbalance
-    - Lưu hình ảnh
     """
-    # TODO: Implement class distribution visualization
-    print(
-        f"[EDA] TODO: Vẽ phân phối class cho '{target_column}' và lưu vào {output_path}")
-    pass
+    if target_column not in df.columns:
+        raise ValueError(f"Target column '{target_column}' không tồn tại trong DataFrame")
+    
+    print(f"[EDA] Vẽ class distribution cho '{target_column}'...")
+    
+    # Tính số lượng và phần trăm mỗi class
+    class_counts = df[target_column].value_counts()
+    class_pct = (class_counts / len(df)) * 100
+    
+    # Cảnh báo nếu có class imbalance
+    min_pct = class_pct.min()
+    max_pct = class_pct.max()
+    imbalance_ratio = max_pct / min_pct if min_pct > 0 else float('inf')
+    
+    if imbalance_ratio > 3:
+        print(f"[EDA] ⚠️  Class imbalance detected! Ratio: {imbalance_ratio:.2f}:1")
+    
+    # Vẽ subplot với 2 biểu đồ
+    fig, axes = plt.subplots(1, 2, figsize=figsize)
+    
+    # Bar chart: tính số lượng
+    class_counts.plot(kind='bar', ax=axes[0], color='skyblue', edgecolor='black')
+    axes[0].set_title(f'{target_column} - Count', fontsize=12, fontweight='bold')
+    axes[0].set_xlabel('Class')
+    axes[0].set_ylabel('Count')
+    axes[0].tick_params(axis='x', rotation=45)
+    
+    # Thêm số lượng lên đỉnh bar
+    for i, v in enumerate(class_counts):
+        axes[0].text(i, v + 100, str(v), ha='center', fontweight='bold')
+    
+    # Pie chart: tính phần trăm
+    colors = ['#ff9999', '#66b3ff']
+    axes[1].pie(class_counts, labels=class_counts.index, autopct='%1.1f%%',
+                colors=colors[:len(class_counts)], startangle=90)
+    axes[1].set_title(f'{target_column} - Distribution', fontsize=12, fontweight='bold')
+    
+    plt.tight_layout()
+    
+    # Lưu hình ảnh
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    
+    print(f"[EDA] Lưu class distribution tại: {output_path}")
+    print(f"[EDA] Class distribution:")
+    for cls, count in class_counts.items():
+        print(f"  - {cls}: {count} ({class_pct[cls]:.2f}%)")
+    
+    return output_path
 
 
 def run_full_eda(df: pd.DataFrame, target_column: str, output_dir: str) -> Dict[str, Any]:
@@ -238,18 +296,65 @@ def run_full_eda(df: pd.DataFrame, target_column: str, output_dir: str) -> Dict[
 
     Returns:
         Dictionary chứa báo cáo và đường dẫn đến các visualizations
-
-    TODO: Implement full EDA pipeline
-    - Tạo thư mục output nếu chưa tồn tại
-    - Gọi generate_eda_report
-    - Gọi plot_correlation_heatmap
-    - Gọi plot_missing_values
-    - Gọi plot_class_distribution
-    - Tổng hợp kết quả
     """
-    # TODO: Implement full EDA pipeline
-    print("[EDA] TODO: Chạy full EDA pipeline")
-    pass
+    print("\n" + "="*80)
+    print("RUNNING FULL EDA PIPELINE")
+    print("="*80)
+    
+    # Tạo thư mục output nếu chưa tồn tại
+    os.makedirs(output_dir, exist_ok=True)
+    
+    results = {}
+    
+    # 1. Gọi generate_eda_report
+    print("\n[1/4] Generating descriptive statistics report...")
+    eda_report = generate_eda_report(df, output_dir=output_dir)
+    results['report_path'] = os.path.join(output_dir, 'eda_report.json')
+    
+    # 2. Gọi plot_correlation_heatmap
+    print("\n[2/4] Plotting correlation heatmap...")
+    try:
+        corr_path = os.path.join(output_dir, 'correlation_heatmap.png')
+        plot_correlation_heatmap(df, corr_path)
+        results['correlation_heatmap'] = corr_path
+    except Exception as e:
+        print(f"[EDA] Warning: Không thể vẽ correlation heatmap: {e}")
+        results['correlation_heatmap'] = None
+    
+    # 3. Gọi plot_missing_values
+    print("\n[3/4] Plotting missing values analysis...")
+    try:
+        missing_path = os.path.join(output_dir, 'missing_values_chart.png')
+        plot_missing_values(df, missing_path)
+        results['missing_values_chart'] = missing_path
+    except Exception as e:
+        print(f"[EDA] Warning: Không thể vẽ missing values chart: {e}")
+        results['missing_values_chart'] = None
+    
+    # 4. Gọi plot_class_distribution
+    print("\n[4/4] Plotting class distribution...")
+    try:
+        class_dist_path = os.path.join(output_dir, 'class_distribution.png')
+        plot_class_distribution(df, target_column, class_dist_path)
+        results['class_distribution'] = class_dist_path
+    except Exception as e:
+        print(f"[EDA] Warning: Không thể vẽ class distribution: {e}")
+        results['class_distribution'] = None
+    
+    # Tổng hợp kết quả
+    results['full_report'] = eda_report
+    results['output_dir'] = output_dir
+    
+    print("\n" + "="*80)
+    print("EDA PIPELINE COMPLETED")
+    print("="*80)
+    print(f"All outputs saved to: {output_dir}")
+    print(f"Generated files:")
+    for key, path in results.items():
+        if isinstance(path, str) and os.path.exists(path):
+            print(f"  ✓ {key}: {path}")
+    
+    return results
 
 
 # TODO: Thêm các hàm visualization khác nếu cần

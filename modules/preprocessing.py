@@ -10,9 +10,10 @@ Module này cung cấp các hàm tiền xử lý dữ liệu có thể cấu hì
 import os
 import pandas as pd
 import numpy as np
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, Optional
 from sklearn.impute import SimpleImputer, KNNImputer
 from sklearn.preprocessing import OneHotEncoder, LabelEncoder, StandardScaler, MinMaxScaler
+from sklearn.model_selection import train_test_split
 
 
 def apply_imputation(df: pd.DataFrame, config: Dict[str, Any]) -> Tuple[pd.DataFrame, Dict[str, Any]]:
@@ -375,7 +376,232 @@ def preprocess_pipeline(df: pd.DataFrame, target_column: str,
     return X, y, metadata
 
 
+def preprocess_with_train_test_split(
+    df: pd.DataFrame,
+    target_column: str,
+    config: Dict[str, Any],
+    test_size: float = 0.2,
+    random_state: int = 42
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, Dict[str, Any]]:
+    """
+    Pipeline preprocessing với train/test split để tránh data leakage.
+    
+    Quy trình:
+    1. Tách features và target
+    2. Split train/test (BEFORE preprocessing)
+    3. Xóa cột + điền hằng số dựa trên config (áp dụng trên cả train/test để thống nhất)
+    4. Fit tất cả transformers (imputer, encoder, scaler) trên TRAIN DATA ONLY
+    5. Transform cả TRAIN và TEST data bằng fitted transformers
+    6. Trả về X_train, X_test, y_train, y_test, metadata
+    
+    Args:
+        df: DataFrame gốc
+        target_column: Tên cột target để tách ra
+        config: Dictionary cấu hình với keys 'imputation', 'encoding', 'scaling'
+        test_size: Tỷ lệ test set (mặc định: 0.2)
+        random_state: Seed cho reproducibility (mặc định: 42)
+    
+    Returns:
+        Tuple chứa:
+            - X_train: Training features đã được preprocess (numpy array)
+            - X_test: Testing features đã được preprocess (numpy array)
+            - y_train: Training target values (numpy array)
+            - y_test: Testing target values (numpy array)
+            - metadata: Dictionary chứa fitted transformers và preprocessing info
+    
+    ⚠️ IMPORTANT: Tránh data leakage bằng cách fit trên train data only!
+    """
+    print("[Preprocessing] Bắt đầu preprocessing với train/test split (tránh data leakage)...")
+    
+    # 1. Tách features và target
+    if target_column not in df.columns:
+        raise ValueError(f"Target column '{target_column}' không tồn tại trong DataFrame")
+    
+    y = df[target_column].values
+    X_df = df.drop(columns=[target_column])
+    
+    # 2. Split train/test TRƯỚC khi preprocessing
+    print(f"[Preprocessing] Split data: {(1-test_size)*100:.0f}% train, {test_size*100:.0f}% test")
+    X_train, X_test, y_train, y_test = train_test_split(
+        X_df, y, test_size=test_size, random_state=random_state
+    )
+    print(f"  - Train shape: {X_train.shape}, Test shape: {X_test.shape}")
+    
+    # 3. Xử lý drop columns và constant fill (áp dụng trên cả train/test)
+    print("\n--- BƯỚC 1: XỬ LÝ MISSING DATA - IMPUTATION ---")
+    impute_config = config.get('imputation', {})
+    
+    # Drop columns
+    drop_cols = impute_config.get('drop_columns', [])
+    if drop_cols:
+        cols_to_drop = [col for col in drop_cols if col in X_train.columns]
+        X_train = X_train.drop(columns=cols_to_drop)
+        X_test = X_test.drop(columns=cols_to_drop)
+        print(f"[Preprocessing] Đã xoá các cột: {cols_to_drop}")
+    
+    # Constant fill
+    constant_fill = impute_config.get('constant_fill', {})
+    for col, value in constant_fill.items():
+        if col in X_train.columns:
+            X_train[col] = X_train[col].fillna(value)
+            X_test[col] = X_test[col].fillna(value)
+            print(f"[Preprocessing] Điền giá trị {value} cho cột '{col}'")
+    
+    # 4. Fit imputers trên TRAIN data only
+    method = impute_config.get('method', 'SimpleImputer')
+    numeric_cols_train = X_train.select_dtypes(include=[np.number]).columns.tolist()
+    categorical_cols_train = X_train.select_dtypes(exclude=[np.number]).columns.tolist()
+    
+    imputers = {}
+    
+    if method == 'SimpleImputer':
+        strategy = impute_config.get('strategy', 'median')
+        print(f"[Preprocessing] Fitting SimpleImputer (strategy='{strategy}') trên train data...")
+        
+        if numeric_cols_train:
+            num_imputer = SimpleImputer(strategy=strategy)
+            X_train[numeric_cols_train] = num_imputer.fit_transform(X_train[numeric_cols_train])
+            X_test[numeric_cols_train] = num_imputer.transform(X_test[numeric_cols_train])
+            imputers['numeric'] = num_imputer
+        
+        if categorical_cols_train:
+            cat_imputer = SimpleImputer(strategy='most_frequent')
+            X_train[categorical_cols_train] = cat_imputer.fit_transform(X_train[categorical_cols_train])
+            X_test[categorical_cols_train] = cat_imputer.transform(X_test[categorical_cols_train])
+            imputers['categorical'] = cat_imputer
+    
+    elif method == 'KNNImputer':
+        n_neighbors = impute_config.get('n_neighbors', 5)
+        print(f"[Preprocessing] Fitting KNNImputer (n_neighbors={n_neighbors}) trên train data...")
+        
+        if numeric_cols_train:
+            knn_imputer = KNNImputer(n_neighbors=n_neighbors)
+            X_train[numeric_cols_train] = knn_imputer.fit_transform(X_train[numeric_cols_train])
+            X_test[numeric_cols_train] = knn_imputer.transform(X_test[numeric_cols_train])
+            imputers['numeric'] = knn_imputer
+        
+        if categorical_cols_train:
+            cat_imputer = SimpleImputer(strategy='most_frequent')
+            X_train[categorical_cols_train] = cat_imputer.fit_transform(X_train[categorical_cols_train])
+            X_test[categorical_cols_train] = cat_imputer.transform(X_test[categorical_cols_train])
+            imputers['categorical'] = cat_imputer
+    
+    else:
+        raise ValueError(f"[Preprocessing] Method '{method}' chưa được hỗ trợ.")
+    
+    # 5. Fit encoding trên TRAIN data only
+    print("\n--- BƯỚC 2: ENCODING ---")
+    encode_config = config.get('encoding', {})
+    categorical_cols = X_train.select_dtypes(include=['object', 'category']).columns.tolist()
+    
+    encoder = None
+    encoders_dict = {}
+    
+    if categorical_cols:
+        enc_method = encode_config.get('method', 'OneHot')
+        print(f"[Preprocessing] Fitting {enc_method} encoding trên train data...")
+        
+        if enc_method == 'OneHot':
+            drop_first = encode_config.get('drop_first', False)
+            drop_param = 'first' if drop_first else None
+            
+            encoder = OneHotEncoder(sparse_output=False, drop=drop_param, handle_unknown='ignore')
+            encoder.fit(X_train[categorical_cols])
+            
+            # Transform train và test
+            X_train_enc = encoder.transform(X_train[categorical_cols])
+            X_test_enc = encoder.transform(X_test[categorical_cols])
+            
+            # Tạo tên cột và DataFrame
+            encoded_columns = []
+            for i, col in enumerate(categorical_cols):
+                for cat in encoder.categories_[i]:
+                    encoded_columns.append(f"{col}_{cat}")
+            
+            X_train_enc_df = pd.DataFrame(X_train_enc, columns=encoded_columns, index=X_train.index)
+            X_test_enc_df = pd.DataFrame(X_test_enc, columns=encoded_columns, index=X_test.index)
+            
+            # Xóa categorical columns gốc và thêm encoded
+            X_train = X_train.drop(columns=categorical_cols)
+            X_test = X_test.drop(columns=categorical_cols)
+            X_train = pd.concat([X_train, X_train_enc_df], axis=1)
+            X_test = pd.concat([X_test, X_test_enc_df], axis=1)
+            
+            print(f"[Preprocessing] OneHot encoding xong. Features: {X_train.shape[1]}")
+        
+        elif enc_method == 'Label':
+            print("[Preprocessing] Fitting Label encoding trên train data...")
+            
+            for col in categorical_cols:
+                le = LabelEncoder()
+                X_train[col] = le.fit_transform(X_train[col].astype(str))
+                X_test[col] = le.transform(X_test[col].astype(str))
+                encoders_dict[col] = le
+            
+            encoder = encoders_dict
+            print(f"[Preprocessing] Label encoding xong. {len(categorical_cols)} cột encode")
+    
+    # 6. Fit scaling trên TRAIN data only
+    print("\n--- BƯỚC 3: SCALING ---")
+    scale_config = config.get('scaling', {})
+    numeric_cols = X_train.select_dtypes(include=[np.number]).columns.tolist()
+    
+    scaler = None
+    if numeric_cols:
+        scale_method = scale_config.get('method', 'StandardScaler')
+        print(f"[Preprocessing] Fitting {scale_method} trên train data...")
+        
+        if scale_method == 'StandardScaler':
+            scaler = StandardScaler()
+        elif scale_method == 'MinMaxScaler':
+            feature_range = tuple(scale_config.get('feature_range', (0, 1)))
+            scaler = MinMaxScaler(feature_range=feature_range)
+            print(f"  - feature_range = {feature_range}")
+        else:
+            raise ValueError(f"[Preprocessing] Scaling method '{scale_method}' chưa được hỗ trợ.")
+        
+        # Fit trên train, transform cả train và test
+        scaler.fit(X_train[numeric_cols])
+        X_train[numeric_cols] = scaler.transform(X_train[numeric_cols])
+        X_test[numeric_cols] = scaler.transform(X_test[numeric_cols])
+        
+        print(f"[Preprocessing] Scaling xong cho {len(numeric_cols)} features")
+    
+    # 7. Chuyển sang numpy array
+    X_train_array = X_train.values
+    X_test_array = X_test.values
+    
+    # 8. Tổng hợp metadata
+    metadata = {
+        'imputation': {
+            'method': method,
+            'imputers': imputers,
+            'numeric_columns': numeric_cols_train,
+            'categorical_columns': categorical_cols_train
+        },
+        'encoding': {
+            'method': encode_config.get('method', 'OneHot'),
+            'encoder': encoder,
+            'categorical_columns': categorical_cols
+        },
+        'scaling': {
+            'method': scale_config.get('method', 'StandardScaler'),
+            'scaler': scaler,
+            'numeric_columns': numeric_cols
+        },
+        'split_info': {
+            'test_size': test_size,
+            'random_state': random_state,
+            'train_shape': X_train_array.shape,
+            'test_shape': X_test_array.shape
+        }
+    }
+    
+    print(f"\n[Preprocessing] Hoàn tất preprocessing! Train: {X_train_array.shape}, Test: {X_test_array.shape}")
+    
+    return X_train_array, X_test_array, y_train, y_test, metadata
+
+
 # TODO: Thêm các hàm utility khác nếu cần
 # - Hàm lưu và load fitted transformers (scalers, encoders)
-# - Hàm transform test data với fitted transformers
 # - Hàm xử lý outliers
