@@ -99,6 +99,21 @@ MODELS_CONFIG = {
             'C': 1.0,  # Regularization parameter
             'gamma': 'scale',  # Kernel coefficient
             'random_state': 42
+        },
+        'tuning': {
+            'enabled': True,
+            'base_params': {
+                'probability': True,
+                'random_state': 42
+            },
+            'param_grid': {
+                'kernel': ['linear', 'rbf', 'poly', 'sigmoid'],
+                'C': [0.1, 1.0, 10.0],
+                'gamma': ['scale', 'auto']
+            },
+            'scoring': 'f1',
+            'cv': 5,
+            'n_jobs': -1
         }
     },
 

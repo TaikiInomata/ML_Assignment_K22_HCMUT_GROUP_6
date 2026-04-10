@@ -1,0 +1,4 @@
+params,mean_test_score,rank_test_score
+"{'C': 1.0, 'gamma': 'scale', 'kernel': 'linear'}",1.0,1
+"{'C': 1.0, 'gamma': 'scale', 'kernel': 'sigmoid'}",1.0,1
+"{'C': 1.0, 'gamma': 'scale', 'kernel': 'rbf'}",0.9709753304067124,3

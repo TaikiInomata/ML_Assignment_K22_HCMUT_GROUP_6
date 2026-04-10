@@ -1,0 +1,19 @@
+{
+  "best_params": {
+    "C": 1.0,
+    "gamma": "scale",
+    "kernel": "linear"
+  },
+  "cv_best_score": 1.0,
+  "test_metrics": {
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+  },
+  "artifacts": {
+    "best_model": "reports\\evaluation\\svm_best_model.joblib",
+    "metrics": "reports\\evaluation\\svm_test_metrics.json",
+    "ranking": "reports\\evaluation\\svm_grid_ranking.csv"
+  }
+}
