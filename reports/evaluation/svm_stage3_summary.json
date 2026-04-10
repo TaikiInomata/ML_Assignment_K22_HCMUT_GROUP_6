@@ -14,6 +14,9 @@
   "artifacts": {
     "best_model": "reports\\evaluation\\svm_best_model.joblib",
     "metrics": "reports\\evaluation\\svm_test_metrics.json",
-    "ranking": "reports\\evaluation\\svm_grid_ranking.csv"
+    "ranking": "reports\\evaluation\\svm_grid_ranking.csv",
+    "kernel_comparison_plot": "reports\\evaluation\\svm_kernel_comparison.png",
+    "confusion_matrix_plot": "reports\\evaluation\\svm_confusion_matrix.png",
+    "progress_report_markdown": "reports\\evaluation\\svm_stage3_member3_progress_report.md"
   }
 }

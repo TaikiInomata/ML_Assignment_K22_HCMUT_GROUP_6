@@ -16,7 +16,10 @@ import argparse
 
 import joblib
 import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix
 
 # Ensure project root is importable when running the script directly.
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -33,6 +36,118 @@ def ensure_output_dirs() -> Path:
     output_dir = Path("reports/evaluation")
     output_dir.mkdir(parents=True, exist_ok=True)
     return output_dir
+
+
+def _plot_kernel_comparison(result: dict, output_path: Path) -> None:
+    rows = []
+    for params, score in zip(
+        result["grid_results"]["params"], result["grid_results"]["mean_test_score"]
+    ):
+        rows.append(
+            {
+                "kernel": params.get("kernel", "unknown"),
+                "mean_test_score": score,
+            }
+        )
+
+    score_df = pd.DataFrame(rows)
+    kernel_df = (
+        score_df.groupby("kernel", as_index=False)["mean_test_score"]
+        .mean()
+        .sort_values("mean_test_score", ascending=False)
+    )
+
+    plt.figure(figsize=(8, 5))
+    palette = ["#1f77b4" if kernel != result["best_params"]["kernel"] else "#d62728" for kernel in kernel_df["kernel"]]
+    ax = sns.barplot(data=kernel_df, x="kernel", y="mean_test_score", palette=palette)
+    ax.set_title("So sánh kernel SVM theo điểm CV trung bình", fontsize=13, weight="bold")
+    ax.set_xlabel("Kernel")
+    ax.set_ylabel("Mean CV score")
+    ax.set_ylim(0, 1.05)
+
+    for container in ax.containers:
+        ax.bar_label(container, fmt="%.4f", padding=3)
+
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300, bbox_inches="tight")
+    plt.close()
+
+
+def _plot_confusion_matrix(y_true, y_pred, output_path: Path) -> None:
+    labels = sorted(pd.unique(pd.Series(y_true)).tolist())
+    cm = confusion_matrix(y_true, y_pred, labels=labels)
+
+    plt.figure(figsize=(6.5, 5.5))
+    ax = sns.heatmap(
+        cm,
+        annot=True,
+        fmt="d",
+        cmap="Blues",
+        cbar=False,
+        xticklabels=labels,
+        yticklabels=labels,
+    )
+    ax.set_title("Confusion Matrix - SVM tốt nhất", fontsize=13, weight="bold")
+    ax.set_xlabel("Predicted label")
+    ax.set_ylabel("True label")
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300, bbox_inches="tight")
+    plt.close()
+
+
+def _build_report_markdown(summary: dict, kernel_plot: Path, cm_plot: Path) -> str:
+    best_params = summary["best_params"]
+    metrics = summary["test_metrics"]
+
+    return f"""# Progress Report 3 - Thành viên 3
+
+## 1. Nhiệm vụ thực hiện
+
+Trong Giai đoạn 3, Thành viên 3 phụ trách huấn luyện và tối ưu mô hình SVM trên dữ liệu đã tiền xử lý. Mục tiêu của phần việc này là thử nghiệm nhiều kernel khác nhau, so sánh hiệu quả theo cross-validation, sau đó đánh giá mô hình tốt nhất trên tập test.
+
+## 2. Quy trình thực hiện
+
+1. Tách train/test trước khi tiền xử lý để tránh data leakage.
+2. Tiền xử lý dữ liệu bằng imputation, one-hot encoding và standard scaling.
+3. Tối ưu SVM bằng GridSearchCV với nhiều kernel.
+4. Chọn mô hình có điểm cross-validation tốt nhất.
+5. Đánh giá trên tập test và xuất các biểu đồ phục vụ báo cáo.
+
+## 3. Kết quả thí nghiệm
+
+- Kernel tốt nhất: `{best_params.get('kernel')}`
+- Tham số tốt nhất: `{json.dumps(best_params, ensure_ascii=False)}`
+- Điểm CV tốt nhất: `{summary['cv_best_score']:.4f}`
+- Accuracy test: `{metrics['accuracy']:.4f}`
+- Precision test: `{metrics['precision']:.4f}`
+- Recall test: `{metrics['recall']:.4f}`
+- F1-score test: `{metrics['f1']:.4f}`
+
+## 4. Nhận xét
+
+Kết quả cho thấy SVM kernel linear phù hợp nhất với bộ dữ liệu sau tiền xử lý trong cấu hình thử nghiệm này. Mô hình đạt kết quả rất cao trên tập test, cho thấy pipeline tiền xử lý và lựa chọn tham số đã tạo ra biểu diễn dữ liệu tốt cho bài toán phân loại.
+
+## 5. Biểu đồ đưa vào báo cáo
+
+### 5.1 So sánh kernel
+
+![So sánh kernel SVM]({kernel_plot.as_posix()})
+
+### 5.2 Confusion Matrix
+
+![Confusion Matrix SVM]({cm_plot.as_posix()})
+
+## 6. File đầu ra
+
+- Best model: `reports/evaluation/svm_best_model.joblib`
+- Metrics: `reports/evaluation/svm_test_metrics.json`
+- Ranking: `reports/evaluation/svm_grid_ranking.csv`
+- Summary: `reports/evaluation/svm_stage3_summary.json`
+
+## 7. Kết luận
+
+Phần việc của Thành viên 3 đã hoàn thành yêu cầu Stage 3: huấn luyện SVM, thử nhiều kernel, chọn cấu hình tốt nhất và tạo đầy đủ artifact phục vụ báo cáo.
+"""
 
 
 def load_dataset_from_config() -> pd.DataFrame:
@@ -155,11 +270,42 @@ def main() -> None:
     ).sort_values("rank_test_score", ascending=True)
     ranking_df.to_csv(ranking_path, index=False)
 
+    kernel_plot_path = output_dir / "svm_kernel_comparison.png"
+    cm_plot_path = output_dir / "svm_confusion_matrix.png"
+    report_path = output_dir / "svm_stage3_member3_progress_report.md"
+
+    _plot_kernel_comparison(result, kernel_plot_path)
+    _plot_confusion_matrix(y_test, result["predictions"], cm_plot_path)
+
+    report_content = _build_report_markdown(
+        summary={
+            "best_params": result["best_params"],
+            "cv_best_score": result["cv_best_score"],
+            "test_metrics": result["test_metrics"],
+        },
+        kernel_plot=kernel_plot_path,
+        cm_plot=cm_plot_path,
+    )
+    report_path.write_text(report_content, encoding="utf-8")
+
+    summary["artifacts"].update(
+        {
+            "kernel_comparison_plot": str(kernel_plot_path),
+            "confusion_matrix_plot": str(cm_plot_path),
+            "progress_report_markdown": str(report_path),
+        }
+    )
+    with summary_path.open("w", encoding="utf-8") as f:
+        json.dump(summary, f, indent=2, ensure_ascii=False)
+
     print("\n[Stage3-Member3] HOÀN THÀNH")
     print(f"  - Best params: {result['best_params']}")
     print(f"  - CV best score: {result['cv_best_score']:.4f}")
     print(f"  - Test metrics: {result['test_metrics']}")
     print(f"  - Summary: {summary_path}")
+    print(f"  - Kernel plot: {kernel_plot_path}")
+    print(f"  - Confusion matrix: {cm_plot_path}")
+    print(f"  - Report markdown: {report_path}")
 
 
 if __name__ == "__main__":
