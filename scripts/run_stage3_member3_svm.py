@@ -125,7 +125,7 @@ Trong Giai đoạn 3, Thành viên 3 phụ trách huấn luyện và tối ưu m
 
 ## 4. Nhận xét
 
-Kết quả cho thấy SVM kernel linear phù hợp nhất với bộ dữ liệu sau tiền xử lý trong cấu hình thử nghiệm này. Mô hình đạt kết quả rất cao trên tập test, cho thấy pipeline tiền xử lý và lựa chọn tham số đã tạo ra biểu diễn dữ liệu tốt cho bài toán phân loại.
+Kết quả cho thấy kernel `linear` là lựa chọn tốt nhất trong các cấu hình đã thử ở thí nghiệm hiện tại. Với F1-score khoảng 0.596 trên tập test, mô hình đạt mức hiệu năng trung bình-khá và có thể tiếp tục cải thiện bằng mở rộng grid tham số, cân bằng dữ liệu, hoặc bổ sung đặc trưng phù hợp hơn.
 
 ## 5. Biểu đồ đưa vào báo cáo
 
@@ -181,6 +181,17 @@ def main() -> None:
         action="store_true",
         help="Dùng lưới tham số gọn để chạy nhanh.",
     )
+    parser.add_argument(
+        "--full",
+        action="store_true",
+        help="Chạy chế độ đầy đủ để test chất lượng mô hình với lưới tham số rộng hơn.",
+    )
+    parser.add_argument(
+        "--max-iter",
+        type=int,
+        default=5000,
+        help="Số vòng lặp tối đa cho SVM solver.",
+    )
     args = parser.parse_args()
 
     output_dir = ensure_output_dirs()
@@ -198,7 +209,7 @@ def main() -> None:
     )
 
     # Tăng tốc tune nếu train set quá lớn.
-    if args.max_train_samples > 0 and len(X_train) > args.max_train_samples:
+    if not args.full and args.max_train_samples > 0 and len(X_train) > args.max_train_samples:
         X_train, _, y_train, _ = train_test_split(
             X_train,
             y_train,
@@ -219,7 +230,7 @@ def main() -> None:
     svm_tuning_cfg = dict(svm_tuning_cfg)
     svm_tuning_cfg["cv"] = args.cv
     base_params = dict(svm_tuning_cfg.get("base_params", {}))
-    base_params.setdefault("max_iter", 2000)
+    base_params["max_iter"] = args.max_iter
     svm_tuning_cfg["base_params"] = base_params
     if args.quick:
         svm_tuning_cfg["param_grid"] = {
@@ -227,7 +238,25 @@ def main() -> None:
             "C": [1.0],
             "gamma": ["scale"],
         }
-        print("[Stage3-Member3] Quick tuning enabled: thử 3 kernel với grid gọn")
+        print(
+            "[Stage3-Member3] Quick tuning enabled: thử 3 kernel với grid gọn "
+            f"(max_iter={args.max_iter})"
+        )
+    elif args.full:
+        svm_tuning_cfg["param_grid"] = {
+            "kernel": ["linear", "rbf", "poly", "sigmoid"],
+            "C": [0.1, 1.0, 10.0],
+            "gamma": ["scale", "auto"],
+        }
+        svm_tuning_cfg["cv"] = max(args.cv, 5)
+        svm_tuning_cfg["n_jobs"] = -1
+        if args.max_iter < 10000:
+            svm_tuning_cfg["base_params"]["max_iter"] = 10000
+        print(
+            "[Stage3-Member3] Full tuning enabled: lưới rộng hơn, CV>=5, "
+            "dùng toàn bộ train set nếu có thể "
+            f"(max_iter={svm_tuning_cfg['base_params']['max_iter']})"
+        )
 
     result = optimize_svm_with_kernel_search(
         X_train=X_train,

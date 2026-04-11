@@ -4,12 +4,12 @@
     "gamma": "scale",
     "kernel": "linear"
   },
-  "cv_best_score": 1.0,
+  "cv_best_score": 0.7049953435808256,
   "test_metrics": {
-    "accuracy": 1.0,
-    "precision": 1.0,
-    "recall": 1.0,
-    "f1": 1.0
+    "accuracy": 0.697797135438479,
+    "precision": 0.5988509631632308,
+    "recall": 0.5925760784750864,
+    "f1": 0.5956969968623935
   },
   "artifacts": {
     "best_model": "reports\\evaluation\\svm_best_model.joblib",
