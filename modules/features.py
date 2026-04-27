@@ -34,10 +34,33 @@ def apply_pca(X: np.ndarray, config: Dict[str, Any]) -> Tuple[np.ndarray, Dict[s
     - Log explained variance ratio
     - Trả về features và metadata
     """
-    # TODO: Implement PCA logic
-    print(f"[Features] TODO: Áp dụng PCA với variance_threshold={config.get('variance_threshold', 0.95)}")
-    pass
+    if X is None or not isinstance(X, np.ndarray):
+        raise ValueError("[Features] X phải là numpy array.")
+    if X.ndim != 2:
+        raise ValueError("[Features] X phải là ma trận 2 chiều (n_samples, n_features).")
 
+    variance_threshold = config.get("variance_threshold", 0.95)
+    print(f"[Features] Áp dụng PCA với variance_threshold={variance_threshold}")
+    
+    pca = PCA(n_components=variance_threshold, svd_solver='full')
+    X_pca = pca.fit_transform(X)
+    
+    explained = pca.explained_variance_ratio_
+    cumulative = explained.cumsum()
+    
+    pca_info = {
+        "variance_threshold": variance_threshold,
+        "original_dim": X.shape[1],
+        "reduced_dim": X_pca.shape[1],
+        "explained_variance_ratio": explained,
+        "cumulative_variance": cumulative,
+        "n_components": pca.n_components_
+        #"pca_model": pca 
+    }
+    
+    print(f"[Features] PCA completed: {X.shape[1]} -> {X_pca.shape[1]} dimensions")
+    print(f"[Features] Cumulative explained variance: {cumulative[-1]:.4f}")
+    return X_pca, pca_info
 
 def save_features(X: np.ndarray, y: np.ndarray, config: Dict[str, Any]) -> str:
     """
@@ -61,10 +84,34 @@ def save_features(X: np.ndarray, y: np.ndarray, config: Dict[str, Any]) -> str:
     - Log thông tin về file đã lưu
     - Trả về đường dẫn
     """
-    # TODO: Implement save logic
+    
     format_type = config.get('format', 'npy')
-    print(f"[Features] TODO: Lưu features với format={format_type}")
-    pass
+    base_path = config.get("path", "features/processed_features")
+
+    # Tạo thư mục nếu chưa tồn tại
+    dir_name = os.path.dirname(base_path)
+    if dir_name:
+        os.makedirs(dir_name, exist_ok=True)
+
+    if format_type == "npy":
+        x_path = f"{base_path}_X.npy"
+        y_path = f"{base_path}_y.npy"
+        np.save(x_path, X)
+        np.save(y_path, y)
+        print(f"[Features] Đã lưu X vào: {x_path}")
+        print(f"[Features] Đã lưu y vào: {y_path}")
+        return base_path
+
+    elif format_type == "h5":
+        h5_path = f"{base_path}.h5"
+        with h5py.File(h5_path, "w") as f:
+            f.create_dataset("X", data=X)
+            f.create_dataset("y", data=y)
+        print(f"[Features] Đã lưu X,y vào: {h5_path}")
+        return h5_path
+
+    else:
+        raise ValueError(f"[Features] Format '{format_type}' không được hỗ trợ.")
 
 
 def load_features(file_path: str, format_type: str = 'npy') -> Tuple[np.ndarray, np.ndarray]:
@@ -89,10 +136,29 @@ def load_features(file_path: str, format_type: str = 'npy') -> Tuple[np.ndarray,
     - Validate shape và dtype
     - Trả về X và y
     """
-    # TODO: Implement load logic
-    print(f"[Features] TODO: Load features từ {file_path} với format={format_type}")
-    pass
+    if format_type == "npy":
+        x_path = f"{file_path}_X.npy"
+        y_path = f"{file_path}_y.npy"
+        if not os.path.exists(x_path) or not os.path.exists(y_path):
+            raise FileNotFoundError("[Features] Không tìm thấy file .npy cần load.")
+        X = np.load(x_path, allow_pickle=False)
+        y = np.load(y_path, allow_pickle=False)
+        print(f"[Features] Đã load X từ: {x_path}")
+        print(f"[Features] Đã load y từ: {y_path}")
+        return X, y
 
+    elif format_type == "h5":
+        h5_path = f"{file_path}.h5"
+        if not os.path.exists(h5_path):
+            raise FileNotFoundError("[Features] Không tìm thấy file .h5 cần load.")
+        with h5py.File(h5_path, "r") as f:
+            X = f["X"][:]
+            y = f["y"][:]
+        print(f"[Features] Đã load X,y từ: {h5_path}")
+        return X, y
+
+    else:
+        raise ValueError(f"[Features] Format '{format_type}' không được hỗ trợ.")
 
 def engineer_features(X: np.ndarray, config: Dict[str, Any]) -> Tuple[np.ndarray, Dict[str, Any]]:
     """
@@ -117,8 +183,17 @@ def engineer_features(X: np.ndarray, config: Dict[str, Any]) -> Tuple[np.ndarray
     - Trả về features và metadata
     """
     # TODO: Implement feature engineering pipeline
-    print("[Features] TODO: Chạy feature engineering pipeline")
-    pass
+    pca_config = config.get("pca", {})
+    pca_enabled = pca_config.get("enabled", False)
+    
+    if pca_enabled:
+        X_out, pca_meta = apply_pca(X, pca_config)
+    else:
+        print("PCA bị tắt trong config, giữ nguên X")
+        X_out = X
+        pca_meta = {}
+    metadata = {"pca": pca_meta}
+    return X_out, metadata
 
 
 # TODO: Thêm các hàm feature engineering khác nếu cần
