@@ -185,3 +185,6 @@ notebooks/*_draft.ipynb
 
 *.png
 notebooks/reports/eda/*
+*.csv
+*.json
+*.joblib

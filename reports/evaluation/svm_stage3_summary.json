@@ -1,0 +1,22 @@
+{
+  "best_params": {
+    "C": 1.0,
+    "gamma": "scale",
+    "kernel": "linear"
+  },
+  "cv_best_score": 0.7049953435808256,
+  "test_metrics": {
+    "accuracy": 0.697797135438479,
+    "precision": 0.5988509631632308,
+    "recall": 0.5925760784750864,
+    "f1": 0.5956969968623935
+  },
+  "artifacts": {
+    "best_model": "reports\\evaluation\\svm_best_model.joblib",
+    "metrics": "reports\\evaluation\\svm_test_metrics.json",
+    "ranking": "reports\\evaluation\\svm_grid_ranking.csv",
+    "kernel_comparison_plot": "reports\\evaluation\\svm_kernel_comparison.png",
+    "confusion_matrix_plot": "reports\\evaluation\\svm_confusion_matrix.png",
+    "progress_report_markdown": "reports\\evaluation\\svm_stage3_member3_progress_report.md"
+  }
+}
