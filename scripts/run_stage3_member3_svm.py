@@ -192,6 +192,12 @@ def main() -> None:
         default=5000,
         help="Số vòng lặp tối đa cho SVM solver.",
     )
+    parser.add_argument(
+        "--full-sample-cap",
+        type=int,
+        default=15000,
+        help="Số mẫu train tối đa dùng trong chế độ full nếu không truyền --max-train-samples riêng.",
+    )
     args = parser.parse_args()
 
     output_dir = ensure_output_dirs()
@@ -209,11 +215,15 @@ def main() -> None:
     )
 
     # Tăng tốc tune nếu train set quá lớn.
-    if not args.full and args.max_train_samples > 0 and len(X_train) > args.max_train_samples:
+    sample_cap = args.max_train_samples
+    if args.full and sample_cap == 5000:
+        sample_cap = args.full_sample_cap
+
+    if sample_cap > 0 and len(X_train) > sample_cap:
         X_train, _, y_train, _ = train_test_split(
             X_train,
             y_train,
-            train_size=args.max_train_samples,
+            train_size=sample_cap,
             stratify=y_train,
             random_state=42,
         )
