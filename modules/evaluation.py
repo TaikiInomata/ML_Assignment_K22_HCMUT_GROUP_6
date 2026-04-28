@@ -169,6 +169,8 @@ def evaluate_model(y_true: np.ndarray, y_pred: np.ndarray,
         'confusion_matrix_path': None,
         'roc_auc_path': None,
     }
+    # Backward-compatible top-level metric keys for notebooks/scripts
+    results.update(metrics)
 
     if config.get('generate_confusion_matrix', True):
         cm_path = os.path.join(output_dir, f'{model_name}_confusion_matrix.png')
