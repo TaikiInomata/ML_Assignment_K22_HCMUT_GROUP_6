@@ -184,24 +184,28 @@ def plot_missing_values(df: pd.DataFrame, output_path: str,
     # 2. Tính phần trăm missing
     missing_percentage = (missing_counts / len(df)) * 100
 
-    # 3. Vẽ bar chart hiển thị missing values
+    # 3. Vẽ bar chart hiển thị missing values (matplotlib + colormap)
     plt.figure(figsize=figsize)
 
-    # Sử dụng seaborn để vẽ barplot
-    ax = sns.barplot(x=missing_counts.index,
-                     y=missing_counts.values, palette="viridis")
+    # Use matplotlib bar to avoid seaborn palette/hue deprecation warnings
+    cmap = plt.get_cmap('viridis')
+    colors = cmap(np.linspace(0, 1, len(missing_counts)))
+
+    ax = plt.gca()
+    bars = ax.bar(range(len(missing_counts)), missing_counts.values, color=colors)
 
     # Cấu hình tiêu đề và nhãn
-    plt.title('Số lượng và Phần trăm Dữ liệu Thiếu theo Cột',
-              fontsize=16, pad=20)
-    plt.xlabel('Tên Cột', fontsize=12)
-    plt.ylabel('Số lượng Missing Values', fontsize=12)
-    plt.xticks(rotation=45, ha='right')  # Xoay chữ ở trục x để dễ đọc
+    ax.set_title('Số lượng và Phần trăm Dữ liệu Thiếu theo Cột', fontsize=16, pad=20)
+    ax.set_xlabel('Tên Cột', fontsize=12)
+    ax.set_ylabel('Số lượng Missing Values', fontsize=12)
+    ax.set_xticks(range(len(missing_counts)))
+    ax.set_xticklabels(missing_counts.index, rotation=45, ha='right')  # Xoay chữ ở trục x để dễ đọc
 
     # Thêm text hiển thị phần trăm lên đỉnh mỗi cột
-    for i, count in enumerate(missing_counts.values):
-        percent_text = f'{missing_percentage.iloc[i]:.1f}%'
-        ax.text(i, count + (count * 0.01), percent_text,
+    for bar, pct in zip(bars, missing_percentage.values):
+        height = bar.get_height()
+        percent_text = f'{pct:.1f}%'
+        ax.text(bar.get_x() + bar.get_width() / 2, height + max(1.0, height * 0.01), percent_text,
                 ha='center', va='bottom', fontsize=10)
 
     plt.tight_layout()
