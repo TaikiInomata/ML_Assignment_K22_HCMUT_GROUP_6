@@ -63,6 +63,28 @@ def apply_pca(X: np.ndarray, config: Dict[str, Any]) -> Tuple[np.ndarray, Dict[s
     }
     return X_pca, pca_info
 
+    variance_threshold = config.get("variance_threshold", 0.95)
+    print(f"[Features] Áp dụng PCA với variance_threshold={variance_threshold}")
+    
+    pca = PCA(n_components=variance_threshold, svd_solver='full')
+    X_pca = pca.fit_transform(X)
+    
+    explained = pca.explained_variance_ratio_
+    cumulative = explained.cumsum()
+    
+    pca_info = {
+        "variance_threshold": variance_threshold,
+        "original_dim": X.shape[1],
+        "reduced_dim": X_pca.shape[1],
+        "explained_variance_ratio": explained,
+        "cumulative_variance": cumulative,
+        "n_components": pca.n_components_
+        #"pca_model": pca 
+    }
+    
+    print(f"[Features] PCA completed: {X.shape[1]} -> {X_pca.shape[1]} dimensions")
+    print(f"[Features] Cumulative explained variance: {cumulative[-1]:.4f}")
+    return X_pca, pca_info
 
 def save_features(X: np.ndarray, y: np.ndarray, config: Dict[str, Any]) -> str:
     """
@@ -157,6 +179,18 @@ def load_features(file_path: str, format_type: str = 'npy') -> Tuple[np.ndarray,
 
     raise ValueError("[Features] format_type phải là 'npy' hoặc 'h5'.")
 
+    elif format_type == "h5":
+        h5_path = f"{file_path}.h5"
+        if not os.path.exists(h5_path):
+            raise FileNotFoundError("[Features] Không tìm thấy file .h5 cần load.")
+        with h5py.File(h5_path, "r") as f:
+            X = f["X"][:]
+            y = f["y"][:]
+        print(f"[Features] Đã load X,y từ: {h5_path}")
+        return X, y
+
+    else:
+        raise ValueError(f"[Features] Format '{format_type}' không được hỗ trợ.")
 
 def engineer_features(X: np.ndarray, config: Dict[str, Any]) -> Tuple[np.ndarray, Dict[str, Any]]:
     """

@@ -7,15 +7,14 @@ Module này cung cấp các hàm để huấn luyện mô hình:
 - Tất cả models nhận parameters từ dictionary
 """
 
-from __future__ import annotations
-
-import importlib
-from typing import Dict, Any, Tuple
-
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier
+from typing import Dict, Any, Tuple
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier
+# TODO: Import TensorFlow/Keras khi implement MLP
+# import tensorflow as tf
+# from tensorflow import keras
 
 
 def train_logistic_regression(X_train: np.ndarray, y_train: np.ndarray, 
@@ -41,11 +40,9 @@ def train_logistic_regression(X_train: np.ndarray, y_train: np.ndarray,
     - Log training progress
     - Trả về model và predictions
     """
-    print("[Models] Huấn luyện Logistic Regression")
-    model = LogisticRegression(**params)
-    model.fit(X_train, y_train)
-    predictions = model.predict(X_test)
-    return model, predictions
+    # TODO: Implement Logistic Regression
+    print("[Models] TODO: Huấn luyện Logistic Regression")
+    pass
 
 
 def train_svm(X_train: np.ndarray, y_train: np.ndarray, 
@@ -71,13 +68,9 @@ def train_svm(X_train: np.ndarray, y_train: np.ndarray,
     - Log training progress
     - Trả về model và predictions
     """
-    print("[Models] Huấn luyện SVM")
-    svm_params = dict(params)
-    svm_params.setdefault('probability', True)
-    model = SVC(**svm_params)
-    model.fit(X_train, y_train)
-    predictions = model.predict(X_test)
-    return model, predictions
+    # TODO: Implement SVM
+    print("[Models] TODO: Huấn luyện SVM")
+    pass
 
 
 def train_random_forest(X_train: np.ndarray, y_train: np.ndarray, 
@@ -103,11 +96,9 @@ def train_random_forest(X_train: np.ndarray, y_train: np.ndarray,
     - Log training progress và feature importances
     - Trả về model và predictions
     """
-    print("[Models] Huấn luyện Random Forest")
-    model = RandomForestClassifier(**params)
-    model.fit(X_train, y_train)
-    predictions = model.predict(X_test)
-    return model, predictions
+    # TODO: Implement Random Forest
+    print("[Models] TODO: Huấn luyện Random Forest")
+    pass
 
 
 def train_mlp(X_train: np.ndarray, y_train: np.ndarray, 
@@ -141,61 +132,9 @@ def train_mlp(X_train: np.ndarray, y_train: np.ndarray,
     - Predict trên test data
     - Trả về model và predictions
     """
-    print("[Models] Huấn luyện MLP (Deep Learning)")
-
-    try:
-        tf = importlib.import_module('tensorflow')
-        keras = importlib.import_module('tensorflow.keras')
-    except ImportError as exc:
-        raise ImportError(
-            "[Models] TensorFlow chưa được cài đặt. Cần cài tensorflow để dùng MLP."
-        ) from exc
-
-    tf.random.set_seed(int(params.get('random_state', 42)))
-
-    hidden_layers = params.get('hidden_layers', [128, 64, 32])
-    activation = params.get('activation', 'relu')
-    dropout_rate = float(params.get('dropout_rate', 0.3))
-    learning_rate = float(params.get('learning_rate', 0.001))
-    epochs = int(params.get('epochs', 50))
-    batch_size = int(params.get('batch_size', 32))
-    validation_split = float(params.get('validation_split', 0.2))
-    early_stopping_cfg = params.get('early_stopping', {})
-
-    model = keras.Sequential()
-    model.add(keras.layers.Input(shape=(X_train.shape[1],)))
-    for units in hidden_layers:
-        model.add(keras.layers.Dense(int(units), activation=activation))
-        if dropout_rate > 0:
-            model.add(keras.layers.Dropout(dropout_rate))
-    model.add(keras.layers.Dense(1, activation='sigmoid'))
-
-    optimizer = keras.optimizers.Adam(learning_rate=learning_rate)
-    model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['accuracy'])
-
-    callbacks = []
-    if early_stopping_cfg.get('enabled', False):
-        callbacks.append(
-            keras.callbacks.EarlyStopping(
-                monitor='val_loss',
-                patience=int(early_stopping_cfg.get('patience', 5)),
-                restore_best_weights=True,
-            )
-        )
-
-    model.fit(
-        X_train,
-        y_train,
-        epochs=epochs,
-        batch_size=batch_size,
-        validation_split=validation_split,
-        callbacks=callbacks,
-        verbose=0,
-    )
-
-    probabilities = model.predict(X_test, verbose=0).reshape(-1)
-    predictions = (probabilities >= 0.5).astype(int)
-    return model, predictions
+    # TODO: Implement MLP with TensorFlow/Keras
+    print("[Models] TODO: Huấn luyện MLP (Deep Learning)")
+    pass
 
 
 def train_models_pipeline(X_train: np.ndarray, y_train: np.ndarray,
@@ -221,56 +160,9 @@ def train_models_pipeline(X_train: np.ndarray, y_train: np.ndarray,
     - Log tổng quan về training session
     - Trả về results dictionary
     """
-    print("[Models] Chạy pipeline huấn luyện tất cả models")
-
-    results: Dict[str, Any] = {
-        'models': {},
-        'predictions': {},
-    }
-
-    if models_config.get('logistic_regression', {}).get('enabled', False):
-        model, preds = train_logistic_regression(
-            X_train,
-            y_train,
-            X_test,
-            models_config.get('logistic_regression', {}).get('params', {}),
-        )
-        results['models']['logistic_regression'] = model
-        results['predictions']['logistic_regression'] = preds
-
-    if models_config.get('svm', {}).get('enabled', False):
-        model, preds = train_svm(
-            X_train,
-            y_train,
-            X_test,
-            models_config.get('svm', {}).get('params', {}),
-        )
-        results['models']['svm'] = model
-        results['predictions']['svm'] = preds
-
-    if models_config.get('random_forest', {}).get('enabled', False):
-        model, preds = train_random_forest(
-            X_train,
-            y_train,
-            X_test,
-            models_config.get('random_forest', {}).get('params', {}),
-        )
-        results['models']['random_forest'] = model
-        results['predictions']['random_forest'] = preds
-
-    if models_config.get('mlp', {}).get('enabled', False):
-        model, preds = train_mlp(
-            X_train,
-            y_train,
-            X_test,
-            models_config.get('mlp', {}).get('params', {}),
-        )
-        results['models']['mlp'] = model
-        results['predictions']['mlp'] = preds
-
-    results['y_test'] = y_test
-    print(f"[Models] Hoàn tất training cho {len(results['models'])} model(s)")
-    return results
+    # TODO: Implement training pipeline
+    print("[Models] TODO: Chạy pipeline huấn luyện tất cả models")
+    pass
 
 
 # TODO: Thêm các hàm utility khác nếu cần
