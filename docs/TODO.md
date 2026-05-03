@@ -217,7 +217,7 @@ Checklist chi tiết cho implementation của Tabular ML Pipeline.
   - [ ] Predict trên test data
   - [ ] Return trained model + predictions
 
-- [ ] **3.4 Implement `train_mlp()` (BONUS)**
+- [x] **3.4 Implement `train_mlp()` (BONUS)**
   - [ ] Build MLP model với Keras/TensorFlow
   - [ ] Define architecture: Input → Hidden Layers → Output
   - [ ] Add dropout layers để prevent overfitting
@@ -226,6 +226,7 @@ Checklist chi tiết cho implementation của Tabular ML Pipeline.
   - [ ] Fit model với validation split
   - [ ] Predict trên test data
   - [ ] Return trained model + predictions
+  - [x] Bonus deep learning pipeline is implemented in `modules/models.py`
 
 - [ ] **3.5 Implement `train_models_pipeline()`**
   - [ ] Split data: train_test_split()

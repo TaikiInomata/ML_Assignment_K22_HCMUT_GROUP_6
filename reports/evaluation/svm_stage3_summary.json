@@ -1,15 +1,15 @@
 {
   "best_params": {
-    "C": 1.0,
+    "C": 10.0,
     "gamma": "scale",
-    "kernel": "linear"
+    "kernel": "rbf"
   },
-  "cv_best_score": 0.7049953435808256,
+  "cv_best_score": 0.7661600863521361,
   "test_metrics": {
-    "accuracy": 0.697797135438479,
-    "precision": 0.5988509631632308,
-    "recall": 0.5925760784750864,
-    "f1": 0.5956969968623935
+    "accuracy": 0.8409833319373482,
+    "precision": 0.8248367654445002,
+    "recall": 0.7322483558131758,
+    "f1": 0.7757897844700324
   },
   "artifacts": {
     "best_model": "reports\\evaluation\\svm_best_model.joblib",

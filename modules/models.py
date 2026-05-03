@@ -9,10 +9,13 @@ Module này cung cấp các hàm để huấn luyện mô hình:
 
 import numpy as np
 from typing import Dict, Any, Tuple
+from sklearn.model_selection import GridSearchCV
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
 import importlib
+
+from modules.evaluation import compute_metrics
 
 
 def train_logistic_regression(X_train: np.ndarray, y_train: np.ndarray, 
@@ -73,6 +76,75 @@ def train_svm(X_train: np.ndarray, y_train: np.ndarray,
     model.fit(X_train, y_train)
     predictions = model.predict(X_test)
     return model, predictions
+
+
+def optimize_svm_with_kernel_search(
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+    params: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Tối ưu SVM bằng GridSearchCV trên nhiều kernel.
+
+    Args:
+        X_train: Training features
+        y_train: Training labels
+        X_test: Test features
+        y_test: Test labels
+        params: Cấu hình tuning với các khóa thường dùng:
+            - base_params: tham số cố định cho SVC
+            - param_grid: lưới tham số cho GridSearchCV
+            - scoring: metric tối ưu
+            - cv: số folds
+            - n_jobs: số tiến trình song song
+
+    Returns:
+        Dictionary chứa best_model, best_params, cv_best_score, test_metrics,
+        predictions và grid_results.
+    """
+    print("[Models] Tối ưu SVM bằng GridSearchCV")
+
+    base_params = dict(params.get("base_params", {}))
+    param_grid = dict(params.get("param_grid", {}))
+    scoring = params.get("scoring", "f1")
+    cv = int(params.get("cv", 5))
+    n_jobs = params.get("n_jobs", -1)
+
+    # Bảo đảm SVC có thể xuất xác suất nếu script/notebook cần mở rộng đánh giá sau này.
+    base_params.setdefault("probability", True)
+
+    estimator = SVC(**base_params)
+    search = GridSearchCV(
+        estimator=estimator,
+        param_grid=param_grid,
+        scoring=scoring,
+        cv=cv,
+        n_jobs=n_jobs,
+        refit=True,
+        return_train_score=True,
+    )
+    search.fit(X_train, y_train)
+
+    best_model = search.best_estimator_
+    predictions = best_model.predict(X_test)
+    test_metrics = compute_metrics(y_test, predictions, metrics=["accuracy", "precision", "recall", "f1"])
+
+    grid_results = {
+        "params": search.cv_results_["params"],
+        "mean_test_score": search.cv_results_["mean_test_score"],
+        "rank_test_score": search.cv_results_["rank_test_score"],
+    }
+
+    return {
+        "best_model": best_model,
+        "best_params": search.best_params_,
+        "cv_best_score": float(search.best_score_),
+        "test_metrics": test_metrics,
+        "predictions": predictions,
+        "grid_results": grid_results,
+        "search": search,
+    }
 
 
 def train_random_forest(X_train: np.ndarray, y_train: np.ndarray, 

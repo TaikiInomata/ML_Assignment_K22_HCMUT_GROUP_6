@@ -14,17 +14,17 @@ Trong Giai đoạn 3, Thành viên 3 phụ trách huấn luyện và tối ưu m
 
 ## 3. Kết quả thí nghiệm
 
-- Kernel tốt nhất: `linear`
-- Tham số tốt nhất: `{"C": 1.0, "gamma": "scale", "kernel": "linear"}`
-- Điểm CV tốt nhất: `0.7050`
-- Accuracy test: `0.6978`
-- Precision test: `0.5989`
-- Recall test: `0.5926`
-- F1-score test: `0.5957`
+- Kernel tốt nhất: `rbf`
+- Tham số tốt nhất: `{"C": 10.0, "gamma": "scale", "kernel": "rbf"}`
+- Điểm CV tốt nhất: `0.7662`
+- Accuracy test: `0.8410`
+- Precision test: `0.8248`
+- Recall test: `0.7322`
+- F1-score test: `0.7758`
 
 ## 4. Nhận xét
 
-Kết quả cho thấy kernel `linear` là lựa chọn tốt nhất trong các cấu hình đã thử ở thí nghiệm hiện tại. Với F1-score khoảng 0.5957 trên tập test, mô hình đạt mức hiệu năng trung bình-khá và có thể tiếp tục cải thiện bằng mở rộng grid tham số, cân bằng dữ liệu, hoặc bổ sung đặc trưng phù hợp hơn.
+Kết quả cho thấy kernel `linear` là lựa chọn tốt nhất trong các cấu hình đã thử ở thí nghiệm hiện tại. Với F1-score khoảng 0.596 trên tập test, mô hình đạt mức hiệu năng trung bình-khá và có thể tiếp tục cải thiện bằng mở rộng grid tham số, cân bằng dữ liệu, hoặc bổ sung đặc trưng phù hợp hơn.
 
 ## 5. Biểu đồ đưa vào báo cáo
 
