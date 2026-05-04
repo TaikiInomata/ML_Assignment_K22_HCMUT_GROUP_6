@@ -29,6 +29,8 @@ env/
 ENV/
 env.bak/
 venv.bak/
+.venv/
+.venv311/
 
 # Jupyter Notebook
 .ipynb_checkpoints
@@ -73,6 +75,7 @@ features/*.npy
 features/*.h5
 features/*.hdf5
 features/*.npz
+notebooks/features/*.npy
 !features/.gitkeep
 
 # Model files
