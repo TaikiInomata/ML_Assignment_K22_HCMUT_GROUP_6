@@ -1,15 +1,15 @@
 {
   "best_params": {
-    "C": 10.0,
+    "C": 1.0,
     "gamma": "scale",
-    "kernel": "rbf"
+    "kernel": "linear"
   },
-  "cv_best_score": 0.7661600863521361,
+  "cv_best_score": 0.6726190476190477,
   "test_metrics": {
-    "accuracy": 0.8409833319373482,
-    "precision": 0.8248367654445002,
-    "recall": 0.7322483558131758,
-    "f1": 0.7757897844700324
+    "accuracy": 0.7995644526342239,
+    "precision": 0.7692010806638364,
+    "recall": 0.6664808828447218,
+    "f1": 0.7141662685140946
   },
   "artifacts": {
     "best_model": "reports\\evaluation\\svm_best_model.joblib",
@@ -17,6 +17,6 @@
     "ranking": "reports\\evaluation\\svm_grid_ranking.csv",
     "kernel_comparison_plot": "reports\\evaluation\\svm_kernel_comparison.png",
     "confusion_matrix_plot": "reports\\evaluation\\svm_confusion_matrix.png",
-    "progress_report_markdown": "reports\\evaluation\\svm_stage3_member3_progress_report.md"
+    "progress_report_markdown": "reports\\evaluation\\svm_stage3_progress_report.md"
   }
 }

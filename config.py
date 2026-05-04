@@ -98,13 +98,15 @@ MODELS_CONFIG = {
             'kernel': 'rbf',  # Options: 'linear', 'poly', 'rbf', 'sigmoid'
             'C': 1.0,  # Regularization parameter
             'gamma': 'scale',  # Kernel coefficient
-            'random_state': 42
+            'random_state': 42,
+            'max_iter': -1
         },
         'tuning': {
             'enabled': True,
             'base_params': {
                 'probability': True,
-                'random_state': 42
+                'random_state': 42,
+                'max_iter': -1
             },
             'param_grid': {
                 'kernel': ['linear', 'rbf', 'poly', 'sigmoid'],

@@ -59,7 +59,14 @@ def _plot_kernel_comparison(result: dict, output_path: Path) -> None:
 
     plt.figure(figsize=(8, 5))
     palette = ["#1f77b4" if kernel != result["best_params"]["kernel"] else "#d62728" for kernel in kernel_df["kernel"]]
-    ax = sns.barplot(data=kernel_df, x="kernel", y="mean_test_score", palette=palette)
+    ax = sns.barplot(
+        data=kernel_df,
+        x="kernel",
+        y="mean_test_score",
+        hue="kernel",
+        palette=palette,
+        legend=False,
+    )
     ax.set_title("So sánh kernel SVM theo điểm CV trung bình", fontsize=13, weight="bold")
     ax.set_xlabel("Kernel")
     ax.set_ylabel("Mean CV score")
@@ -189,8 +196,8 @@ def main() -> None:
     parser.add_argument(
         "--max-iter",
         type=int,
-        default=5000,
-        help="Số vòng lặp tối đa cho SVM solver.",
+        default=-1,
+        help="Số vòng lặp tối đa cho SVM solver (-1 = không giới hạn).",
     )
     parser.add_argument(
         "--full-sample-cap",
@@ -260,8 +267,6 @@ def main() -> None:
         }
         svm_tuning_cfg["cv"] = max(args.cv, 5)
         svm_tuning_cfg["n_jobs"] = -1
-        if args.max_iter < 10000:
-            svm_tuning_cfg["base_params"]["max_iter"] = 10000
         print(
             "[Stage3] Full tuning enabled: lưới rộng hơn, CV>=5, "
             "dùng toàn bộ train set nếu có thể "
