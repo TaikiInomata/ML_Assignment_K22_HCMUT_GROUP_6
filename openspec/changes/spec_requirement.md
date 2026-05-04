@@ -235,8 +235,8 @@ Ngoài notebook, sản phẩm nộp phải bao gồm:
     kết quả và phân tích.
 - Các file đặc trưng đã trích xuất(embedding, vector đặc trưng) được lưu ở
     định dạng.npyhoặc.h5, nộp kèm theo hoặc ghi rõ đường link tải.
-- Cấu trúc thư mụctrong file nộp (.zip) phải rõ ràng: gồm thư mụcnotebooks/,
-    modules/,reports/, vàfeatures/.
+- Cấu trúc thư mụctrong file nộp (.zip) phải rõ ràng: gồm thư mục notebooks/,
+    modules/,reports/, và features/.
 - Sinh viên đượckhuyến khíchtải toàn bộ mã nguồn và tài liệu lên GitHub, sau
     đó chia sẻ đường link trong Colab và báo cáo. Việc này sẽ được cộng điểm khuyến
     khích vì thể hiện khả năng quản lý và công bố mã nguồn khoa học. README
